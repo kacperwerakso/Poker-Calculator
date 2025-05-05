@@ -1,0 +1,88 @@
+<!DOCTYPE html>
+<html lang="pl">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Poker w procentach</title>
+    <link rel="stylesheet" href="style.css">
+    <link rel="icon" href="./images/royalLogo.png" type="image/png">
+</head>
+
+<body>
+    <h1>Pokerek 2.0</h1>
+    <div class="main">
+        <div class="left-column">
+            <div class="player-selector">
+                <label for="players">Liczba graczy:</label>
+                <select id="players">
+                    <option value="2">2</option>
+                    <option value="3">3</option>
+                    <option value="4">4</option>
+                    <option value="5">5</option>
+                    <option value="6">6</option>
+                    <option value="7">7</option>
+                    <option value="8">8</option>
+                    <option value="9">9</option>
+                </select>
+            </div>
+
+            <div class="section1">
+                <h3>Wybrane karty gracza:</h3>
+                <div class="card-area" id="player-cards"></div>
+            </div>
+
+            <div class="section1">
+                <h3>Wybrane karty na stole:</h3>
+                <div class="card-area" id="board-cards"></div>
+            </div>
+
+            <div class="section">
+                <div class="card-grid" id="deck"></div>
+            </div>
+        </div>
+        <div class="right-column">
+            <div class="results">
+                <h3>Statystyki układów:</h3>
+                <ul id="odds">
+                    <li>Para: 0%</li>
+                    <li>Dwie pary: 0%</li>
+                    <li>Trójka: 0%</li>
+                    <li>Strit: 0%</li>
+                    <li>Kolor: 0%</li>
+                    <li>Full: 0%</li>
+                    <li>Kareta: 0%</li>
+                    <li>Poker: 0%</li>
+                </ul>
+                <div id="hand-description">
+                    <h4>Opis układu:</h4>
+                    <p>Brak wystarczających danych.</p>
+                </div>
+                <div id="hand-trends">
+                    <h4>Wskaźniki progresji:</h4>
+                    <ul id="trend-list">
+                        <li>Brak danych</li>
+                    </ul>
+                </div>
+                <div id="winrate">
+                    <h4>Twoje szanse na wygraną:</h4>
+                    <p id="winrate-text">---</p>
+                </div>
+                <div class="strength-meter">
+                    <h4>Siła ręki:</h4>
+                    <div class="bar-background">
+                        <div class="bar-fill" id="strength-bar" style="width: 0%;"></div>
+                    </div>
+
+                </div>
+
+            </div>
+            <button class="reset" onclick="resetAll()">RESET</button>
+        </div>
+    </div>
+
+
+    <script src="script.js"></script>
+</body>
+
+</html>
