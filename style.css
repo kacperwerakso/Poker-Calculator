@@ -3,7 +3,7 @@ body {
     margin: 0;
     padding: 20px;
     color: #333;
-    background-image: url("/images/royalGreen.jpg");
+    background-image: url("./images/royalGreen.jpg");
     background-size: cover;
     background-attachment: fixed;
     background-position: center;
@@ -319,7 +319,7 @@ button:hover {
 
     body {
 
-        background-image: url("/images/royalGreenMobile.jpg");
+        background-image: url("./images/royalGreenMobile.jpg");
         background-size: cover;
         background-position: center;
         background-repeat: no-repeat;
