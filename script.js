@@ -437,7 +437,7 @@ function resetAll() {
 
 function formatCardHTML(card) {
     const filename = cardToFilename(card);
-    return `<img src="../cards/${filename}.svg" class="card-img">`;
+    return `<img src="./cards/${filename}.svg" class="card-img">`;
 }
 
 
@@ -522,5 +522,6 @@ function startGlobalCounter() {
 }
 
 document.addEventListener('DOMContentLoaded', startGlobalCounter);
+
 
 
