@@ -10,7 +10,19 @@
 </head>
 
 <body>
-    <h1>Pokerek 2.0</h1>
+    <header class="navbar">
+        <div class="logo">
+            <img src="./images/pokerLogicLogo.png" alt="PokerLogic logo" class="logo-img">
+        </div>
+
+
+        <button class="reset hidden2" id="button1" onclick="resetAll()" title="Resetuj">
+            <img src="./images/reloadArrows.svg" alt="Reset" class="reset-icon" />
+        </button>
+
+
+        <button class="menu-toggle" id="menu-toggle">☰</button>
+    </header>
     <div class="main">
         <div class="left-column">
             <div class="player-selector">
@@ -36,6 +48,8 @@
             <div class="section1">
                 <h3>Wybrane karty na stole:</h3>
                 <p class="helpDescription">(Wybierz kolejne 3 karty, wynik już będzie, następnie dokładaj kolejne karty)
+                </p>
+                <p class="helpDescription"></p>
                 <div class="card-area" id="board-cards"></div>
             </div>
 
@@ -66,20 +80,19 @@
                         <li>Brak danych</li>
                     </ul>
                 </div>
-                <div id="winrate">
-                    <h4>Twoje szanse na wygraną:</h4>
-                    <p id="winrate-text">---</p>
-                </div>
                 <div class="strength-meter">
                     <h4>Siła ręki:</h4>
                     <div class="bar-background">
                         <div class="bar-fill" id="strength-bar" style="width: 0%;"></div>
                     </div>
+                    <div id="winrate">
+                        <h4>Twoje szanse na wygraną:</h4>
+                        <p id="winrate-text">---</p>
+                    </div>
 
                 </div>
 
             </div>
-            <button class="reset" onclick="resetAll()">RESET</button>
         </div>
     </div>
 

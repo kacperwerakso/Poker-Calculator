@@ -1,14 +1,26 @@
-const deckElement = document.getElementById('deck');
-const playerArea = document.getElementById('player-cards');
-const boardArea = document.getElementById('board-cards');
-const oddsElement = document.getElementById('odds');
-const descriptionElement = document.getElementById('hand-description').querySelector('p');
-const trendsElement = document.getElementById('trend-list');
-
-const suits = ['♠', '♥', '♦', '♣'];
+let deckElement, playerArea, boardArea, oddsElement, descriptionElement, trendsElement;
+const suits = ['s', 'h', 'd', 'c'];
 const values = ['2', '3', '4', '5', '6', '7', '8', '9', 'T', 'J', 'Q', 'K', 'A'];
-
 let selected = { player: [], board: [] };
+
+document.addEventListener('DOMContentLoaded', () => {
+    deckElement = document.getElementById('deck');
+    playerArea = document.getElementById('player-cards');
+    boardArea = document.getElementById('board-cards');
+    oddsElement = document.getElementById('odds');
+    descriptionElement = document.getElementById('hand-description')?.querySelector('p');
+    trendsElement = document.getElementById('trend-list');
+
+    const toggleBtn = document.getElementById('menu-toggle');
+    const navLinks = document.getElementById('nav-links');
+    if (toggleBtn && navLinks) {
+        toggleBtn.addEventListener('click', () => {
+            navLinks.classList.toggle('hidden');
+        });
+    }
+
+    if (deckElement) createDeck();
+});
 
 function createDeck() {
     deckElement.innerHTML = '';
@@ -24,7 +36,7 @@ function createDeck() {
             cardDiv.innerHTML = formatCardHTML(card);
             cardDiv.dataset.card = card;
 
-            if (suit === '♥' || suit === '♦') {
+            if (suit === 'h' || suit === 'd') {
                 cardDiv.classList.add('red-suit');
             } else {
                 cardDiv.classList.add('black-suit');
@@ -37,9 +49,6 @@ function createDeck() {
         deckElement.appendChild(rowDiv);
     });
 }
-
-
-
 
 function selectCard(cardDiv) {
     const card = cardDiv.dataset.card;
@@ -60,19 +69,24 @@ function selectCard(cardDiv) {
         }
 
         updateSimulation();
+
+        if (selected.player.length === 0 && selected.board.length === 0) {
+            document.querySelector('.reset').classList.add('hidden2');
+        }
+
         return;
     }
 
     if (selected.player.length < 2) {
         selected.player.push(card);
         const el = cloneCard(card);
-        if (card[1] === '♥' || card[1] === '♦') el.classList.add('red-suit');
+        if (card[1] === 'h' || card[1] === 'd') el.classList.add('red-suit');
         else el.classList.add('black-suit');
         playerArea.appendChild(el);
     } else if (selected.board.length < 5) {
         selected.board.push(card);
         const el = cloneCard(card);
-        if (card[1] === '♥' || card[1] === '♦') el.classList.add('red-suit');
+        if (card[1] === 'h' || card[1] === 'd') el.classList.add('red-suit');
         else el.classList.add('black-suit');
         boardArea.appendChild(el);
     } else {
@@ -82,6 +96,10 @@ function selectCard(cardDiv) {
 
     cardDiv.classList.add('selected');
     updateSimulation();
+
+    if (selected.player.length > 0 || selected.board.length > 0) {
+        document.querySelector('.reset').classList.remove('hidden2');
+    }
 }
 
 function cloneCard(card) {
@@ -101,31 +119,34 @@ function updateSimulation() {
 
     const result = monteCarloSimulation(10000);
     renderResults(result);
-    const players = parseInt(document.getElementById('players').value);
+    const playerInput = document.getElementById('players');
+    const players = playerInput ? parseInt(playerInput.value) || 2 : 2;
     simulateVsOpponents(selected.player, selected.board, players);
 
 }
 
 function monteCarloSimulation(samples) {
-    const deck = generateDeck().filter(card => !selected.player.includes(card) && !selected.board.includes(card));
+    const deck = generateDeck().filter(card =>
+        !selected.player.includes(card) && !selected.board.includes(card)
+    );
     const hand = [...selected.player, ...selected.board];
-    const trials = samples;
     const stats = {
-        "Para": 0, "Dwie pary": 0, "Trójka": 0, "Strit": 0,
-        "Kolor": 0, "Full": 0, "Kareta": 0, "Poker": 0
+        "Para": 0, "Dwie pary": 0, "Trójka": 0,
+        "Strit": 0, "Kolor": 0, "Full": 0,
+        "Kareta": 0, "Poker": 0
     };
 
-    for (let i = 0; i < trials; i++) {
+    for (let i = 0; i < samples; i++) {
         const remaining = [...deck];
         shuffleArray(remaining);
         const additional = remaining.slice(0, 5 - selected.board.length);
-        const fullHand = [...hand, ...additional];
+        const fullHand = hand.concat(additional);
         const handType = evaluateHand(fullHand);
-        if (stats[handType] !== undefined) stats[handType]++;
+        stats[handType]++;
     }
 
     Object.keys(stats).forEach(key => {
-        stats[key] = (stats[key] / trials) * 100;
+        stats[key] = (stats[key] / samples) * 100;
     });
 
     return stats;
@@ -144,11 +165,13 @@ function shuffleArray(array) {
 
 function evaluateHand(cards) {
     const combinations = getCombinations(cards, 5);
-    let bestRank = 0;
+    let best = null;
 
     for (const combo of combinations) {
-        const rank = rankHand(combo);
-        if (rank > bestRank) bestRank = rank;
+        const evalResult = getRankDetails(combo);
+        if (!best || compareHands(evalResult, best) > 0) {
+            best = evalResult;
+        }
     }
 
     const names = [
@@ -156,20 +179,19 @@ function evaluateHand(cards) {
         'Strit', 'Kolor', 'Full', 'Kareta', 'Poker'
     ];
 
-    return names[bestRank];
+    return names[best.rank];
 }
 
 function checkStraight(indices) {
     const unique = [...new Set(indices)].sort((a, b) => a - b);
+    if (unique.length < 5) return false;
+
     for (let i = 0; i <= unique.length - 5; i++) {
         if (unique[i + 4] - unique[i] === 4) return true;
     }
-    if (unique.includes(12) && unique.includes(0) &&
-        unique.includes(1) && unique.includes(2) &&
-        unique.includes(3)) {
-        return true;
-    }
-    return false;
+
+    return unique.includes(0) && unique.includes(1) && unique.includes(2) &&
+        unique.includes(3) && unique.includes(12);
 }
 
 function getCombinations(array, size) {
@@ -193,50 +215,170 @@ function getCombinations(array, size) {
 function getBestHand(cards) {
     const combos = getCombinations(cards, 5);
     let best = combos[0];
-    let bestRank = rankHand(best);
+    let bestEval = getRankDetails(best);
+
     for (let combo of combos) {
-        const r = rankHand(combo);
-        if (r > bestRank) {
+        const r = getRankDetails(combo);
+        if (compareHands(r, bestEval) > 0) {
             best = combo;
-            bestRank = r;
+            bestEval = r;
         }
     }
+
     return best;
 }
 
 
-function rankHand(hand) {
+function getRankDetails(hand) {
+    if (hand.length !== 5) throw new Error("Hand must contain exactly 5 cards")
+    const valuesOrder = '23456789TJQKA';
     const vals = hand.map(c => c[0]);
     const suits = hand.map(c => c[1]);
+
     const valCounts = {};
     const suitCounts = {};
-
     vals.forEach(v => valCounts[v] = (valCounts[v] || 0) + 1);
     suits.forEach(s => suitCounts[s] = (suitCounts[s] || 0) + 1);
 
-    const counts = Object.values(valCounts).sort((a, b) => b - a);
-    const isFlush = Object.values(suitCounts).some(c => c >= 5);
-    const isStraight = checkStraight(vals.map(v => '23456789TJQKA'.indexOf(v)));
+    const countGroups = Object.entries(valCounts)
+        .map(([val, count]) => ({
+            value: valuesOrder.indexOf(val),
+            count
+        }))
+        .sort((a, b) => b.count - a.count || b.value - a.value);
 
-    if (isFlush && isStraight) return 8; // Poker
-    if (counts[0] === 4) return 7; // Kareta
-    if (counts[0] === 3 && counts[1] === 2) return 6; // Full
-    if (isFlush) return 5; // Kolor
-    if (isStraight) return 4; // Strit
-    if (counts[0] === 3) return 3; // Trójka
-    if (counts[0] === 2 && counts[1] === 2) return 2; // Dwie pary
-    if (counts[0] === 2) return 1; // Para
-    return 0; // Nic
+    const sortedValues = countGroups.map(c => c.value);
+
+    const isFlush = Object.values(suitCounts).some(c => c >= 5);
+    const indices = vals.map(v => valuesOrder.indexOf(v)).sort((a, b) => b - a);
+    const unique = [...new Set(indices)];
+    let straightHigh = null;
+
+    for (let i = 0; i <= unique.length - 5; i++) {
+        if (unique[i] - unique[i + 4] === 4) {
+            straightHigh = unique[i];
+            break;
+        }
+    }
+
+    if (!straightHigh &&
+        unique.includes(12) &&
+        unique.includes(0) &&
+        unique.includes(1) &&
+        unique.includes(2) &&
+        unique.includes(3)) {
+        straightHigh = 3;
+    }
+
+    const flushSuit = Object.entries(suitCounts).find(([s, c]) => c >= 5)?.[0];
+    let flushCards = [];
+    if (flushSuit) {
+        flushCards = hand
+            .filter(c => c[1] === flushSuit)
+            .map(c => valuesOrder.indexOf(c[0]))
+            .sort((a, b) => b - a);
+    }
+
+    if (flushCards.length >= 5) {
+        const uniqFlush = [...new Set(flushCards)];
+        for (let i = 0; i <= uniqFlush.length - 5; i++) {
+            if (uniqFlush[i] - uniqFlush[i + 4] === 4) {
+                return { rank: 8, tiebreakers: [uniqFlush[i]] };
+            }
+        }
+
+        if (
+            uniqFlush.includes(12) &&
+            uniqFlush.includes(0) &&
+            uniqFlush.includes(1) &&
+            uniqFlush.includes(2) &&
+            uniqFlush.includes(3)
+        ) {
+            return { rank: 8, tiebreakers: [3] };
+        }
+    }
+
+    if (countGroups[0].count === 4) {
+        return { rank: 7, tiebreakers: [countGroups[0].value, countGroups[1].value] };
+    }
+
+    if (countGroups[0].count === 3 && countGroups[1].count >= 2) {
+        return { rank: 6, tiebreakers: [countGroups[0].value, countGroups[1].value] };
+    }
+
+    if (flushCards.length >= 5) {
+        return { rank: 5, tiebreakers: flushCards.slice(0, 5) };
+    }
+
+    if (straightHigh !== null) {
+        return { rank: 4, tiebreakers: [straightHigh] };
+    }
+
+    if (countGroups[0].count === 3) {
+        return {
+            rank: 3,
+            tiebreakers: [
+                countGroups[0].value,
+                countGroups[1]?.value || 0,
+                countGroups[2]?.value || 0
+            ]
+        };
+    }
+
+    if (countGroups[0].count === 2 && countGroups[1].count === 2) {
+        return {
+            rank: 2,
+            tiebreakers: [
+                countGroups[0].value,
+                countGroups[1].value,
+                countGroups[2]?.value || 0
+            ]
+        };
+    }
+
+    if (countGroups[0].count === 2) {
+        return {
+            rank: 1,
+            tiebreakers: [
+                countGroups[0].value,
+                countGroups[1]?.value || 0,
+                countGroups[2]?.value || 0,
+                countGroups[3]?.value || 0
+            ]
+        };
+    }
+
+    return { rank: 0, tiebreakers: sortedValues.slice(0, 5) };
+}
+
+function compareHands(handA, handB) {
+    if (handA.rank !== handB.rank) {
+        return handA.rank > handB.rank ? 1 : -1;
+    }
+
+    const minLength = Math.min(handA.tiebreakers.length, handB.tiebreakers.length);
+    for (let i = 0; i < minLength; i++) {
+        if (handA.tiebreakers[i] > handB.tiebreakers[i]) return 1;
+        if (handA.tiebreakers[i] < handB.tiebreakers[i]) return -1;
+    }
+
+    return handA.tiebreakers.length === handB.tiebreakers.length ? 0 :
+        (handA.tiebreakers.length > handB.tiebreakers.length ? 1 : -1);
 }
 
 
+
+
 function renderResults(stats) {
+    if (!oddsElement || !descriptionElement || !trendsElement) return;
+
     oddsElement.innerHTML = '';
     Object.entries(stats).forEach(([hand, val]) => {
+        if (hand === 'Nic') return;
         oddsElement.innerHTML += `<li>${hand}: ${val.toFixed(2)}%</li>`;
     });
 
-    descriptionElement.textContent = 'Symulacja Monte Carlo na podstawie 10 000 rozgrywek.';
+    descriptionElement.textContent = 'Symulacja Monte Carlo na podstawie 10,000 rozgrywek.';
     trendsElement.innerHTML = '';
     if (stats['Strit'] > 15) trendsElement.innerHTML += '<li>Potencjał strita jest wysoki</li>';
     if (stats['Kolor'] > 15) trendsElement.innerHTML += '<li>Potencjał koloru jest wysoki</li>';
@@ -263,11 +405,12 @@ function cardToFilename(card) {
         'K': 'king', 'A': 'ace'
     };
     const suitMap = {
-        '♠': 'spades',
-        '♥': 'hearts',
-        '♦': 'diamonds',
-        '♣': 'clubs'
+        's': 'spades',
+        'h': 'hearts',
+        'd': 'diamonds',
+        'c': 'clubs'
     };
+
     const value = valueMap[card[0]];
     const suit = suitMap[card[1]];
     return `${value}_of_${suit}`;
@@ -280,52 +423,104 @@ function resetAll() {
     descriptionElement.textContent = 'Brak wystarczających danych';
     trendsElement.innerHTML = '<li>Brak danych</li>';
     oddsElement.innerHTML = defaultOdds();
-    document.getElementById('winrate-text').textContent = '---'; // 👈 reset tekstu o wygranej
-    document.getElementById('strength-bar').style.width = '0%'; // 👈 reset paska siły
+    document.getElementById('strength-bar').style.width = '0%';
+    document.getElementById('winrate-text').textContent = '---';
+
+    document.querySelectorAll('.card.selected').forEach(el => el.classList.remove('selected'));
+
     createDeck();
+
+    document.querySelector('.reset').classList.add('hidden2');
 }
 
-createDeck();
+
 
 function formatCardHTML(card) {
     const filename = cardToFilename(card);
-    return `<img src="cards/${filename}.svg" class="card-img">`;
+    return `<img src="../cards/${filename}.svg" class="card-img">`;
 }
 
 
 function simulateVsOpponents(myHand, board, playerCount = 2, samples = 5000) {
-    const fullDeck = generateDeck().filter(c => !myHand.includes(c) && !board.includes(c));
-    const myFullHand = [...myHand, ...board];
+    const fullDeck = generateDeck().filter(c =>
+        !myHand.includes(c) && !board.includes(c)
+    );
+
+    if (playerCount < 2) {
+        console.error("Musi być co najmniej 2 graczy");
+        return;
+    }
 
     let wins = 0, ties = 0, losses = 0;
 
     for (let i = 0; i < samples; i++) {
-        let deck = [...fullDeck];
+        const deck = structuredClone(fullDeck);
         shuffleArray(deck);
 
         const missingCommunity = 5 - board.length;
         const additionalBoard = deck.splice(0, missingCommunity);
         const fullBoard = [...board, ...additionalBoard];
-        const myEval = rankHand(getBestHand([...myHand, ...fullBoard]));
 
-        let beat = 0;
+        const myBest = getBestHand([...myHand, ...fullBoard]);
+        const myEval = getRankDetails(myBest);
+
+        let hasLost = false;
+        let hasTied = false;
+
         for (let p = 1; p < playerCount; p++) {
             const opp = [deck.shift(), deck.shift()];
-            const oppEval = rankHand(getBestHand([...opp, ...fullBoard]));
-            if (oppEval > myEval) {
-                beat++;
+            const oppBest = getBestHand([...opp, ...fullBoard]);
+            const oppEval = getRankDetails(oppBest);
+
+            const comparison = compareHands(myEval, oppEval);
+            if (comparison < 0) {
+                hasLost = true;
                 break;
+            } else if (comparison === 0) {
+                hasTied = true;
             }
         }
 
-        if (beat === 0) wins++;
-        else losses++;
+        if (hasLost) losses++;
+        else if (hasTied) ties++;
+        else wins++;
     }
 
     const winrate = (wins / samples) * 100;
+    const tieRate = (ties / samples) * 100;
+    const lossRate = (losses / samples) * 100;
+
     document.getElementById('winrate-text').textContent =
-        `Wygrywasz w ${winrate.toFixed(1)}% przypadków z ${playerCount - 1} przeciwnikami.`;
+        `Szansa wygranej ${winrate.toFixed(1)}%\nSzansa remisu ${tieRate.toFixed(1)}%\nSzansa przegranej ${lossRate.toFixed(1)}%`;
 
     document.getElementById('strength-bar').style.width = `${winrate.toFixed(1)}%`;
 }
+
+
+
+
+function startGlobalCounter() {
+    const counter = document.getElementById('active-users');
+    if (!counter) return;
+
+    const base = 384;
+    const maxFluctuation = 10;
+
+    function getSyncedValue() {
+        const now = Date.now();
+        const slowTime = now / 15000;
+        const offset = Math.sin(slowTime) * maxFluctuation;
+        return Math.round(base + offset);
+    }
+
+    function updateCounter() {
+        counter.innerHTML = `Aktualnie osób korzysta: ${getSyncedValue()}`;
+        setTimeout(updateCounter, 15000);
+    }
+
+    updateCounter();
+}
+
+document.addEventListener('DOMContentLoaded', startGlobalCounter);
+
 
