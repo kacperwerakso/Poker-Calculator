@@ -499,29 +499,3 @@ function simulateVsOpponents(myHand, board, playerCount = 2, samples = 5000) {
 
 
 
-function startGlobalCounter() {
-    const counter = document.getElementById('active-users');
-    if (!counter) return;
-
-    const base = 384;
-    const maxFluctuation = 10;
-
-    function getSyncedValue() {
-        const now = Date.now();
-        const slowTime = now / 15000;
-        const offset = Math.sin(slowTime) * maxFluctuation;
-        return Math.round(base + offset);
-    }
-
-    function updateCounter() {
-        counter.innerHTML = `Aktualnie osób korzysta: ${getSyncedValue()}`;
-        setTimeout(updateCounter, 15000);
-    }
-
-    updateCounter();
-}
-
-document.addEventListener('DOMContentLoaded', startGlobalCounter);
-
-
-
